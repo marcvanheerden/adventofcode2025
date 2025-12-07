@@ -24,32 +24,10 @@ fn main() {
         }
     }
 
-    let mut splits = 0u32;
-    let mut queue = VecDeque::new();
-    queue.push_back(start);
-
-    while let Some((row, col)) = queue.pop_front() {
-        if row == (height - 1) || queue.contains(&(row, col)) {
-            continue;
-        }
-
-        if splitters.contains(&(row + 1, col)) {
-            if col > 0 {
-                queue.push_back((row + 1, col - 1));
-            }
-            if col < (width - 1) {
-                queue.push_back((row + 1, col + 1));
-            }
-            splits += 1;
-        } else {
-            queue.push_back((row + 1, col));
-        }
-    }
-    dbg!(splits);
-
     let mut queue = VecDeque::new();
     queue.push_back((start.0, start.1, 1u64));
     let mut timelines = 0;
+    let mut splits = 0u32;
 
     loop {
         if queue.is_empty() {
@@ -69,6 +47,7 @@ fn main() {
             if col < (width - 1) {
                 to_add.push((row + 1, col + 1));
             }
+            splits += 1;
         } else {
             to_add.push((row + 1, col));
         }
@@ -84,5 +63,6 @@ fn main() {
             }
         }
     }
+    dbg!(splits);
     dbg!(timelines);
 }
