@@ -18,7 +18,7 @@ impl Junction {
 const CONNECTIONS: usize = 1000;
 
 fn main() {
-    let input = std::fs::read_to_string("input.txt").expect("Can't read file");
+    let input = std::fs::read_to_string("day08_large.txt").expect("Can't read file");
 
     let juncs: Vec<Junction> = input
         .lines()
@@ -58,10 +58,12 @@ fn main() {
                 circuits[*idx1] = Some(circ);
             }
             (Some(circ1), Some(circ2)) => {
-                circuits
-                    .iter_mut()
-                    .filter(|c| **c == Some(circ2))
-                    .for_each(|c| *c = Some(circ1));
+                if circ1 != circ2 {
+                    circuits
+                        .iter_mut()
+                        .filter(|c| **c == Some(circ2))
+                        .for_each(|c| *c = Some(circ1));
+                }
             }
         }
 
@@ -81,6 +83,7 @@ fn main() {
                 println!("Part 1: {}", part1);
             }
             if distinct_circuits.len() == 1 {
+                dbg!(conn_count);
                 println!("Part 2: {}", juncs[*idx1].x * juncs[*idx2].x);
                 break;
             }
