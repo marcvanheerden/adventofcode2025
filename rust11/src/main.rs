@@ -35,7 +35,6 @@ struct SplitCount {
 
 fn paths2(start: &str, edges: &HashMap<&str, Vec<&str>>) -> u64 {
     let mut queue = HashMap::new();
-    // counts: visited neither, visited fft only, visited dac only, visited both
     queue.insert(
         start,
         SplitCount {
