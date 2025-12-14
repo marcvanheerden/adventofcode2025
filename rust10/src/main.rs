@@ -139,16 +139,14 @@ impl Machine {
             .sum::<f32>();
 
         let integerness = solution.iter().map(|x| (x - x.round()).abs()).sum::<f32>();
-        let presses = solution.iter().sum::<f32>();
-        let any_negative = solution
+        let presses = solution.iter().map(|x| x.abs()).sum::<f32>();
+        let negatives: f32 = solution
             .iter()
-            .any(|x| PartialOrd::partial_cmp(x, &0.0) == Some(Ordering::Less));
+            .filter(|x| PartialOrd::partial_cmp(x, &&0.0) == Some(Ordering::Less))
+            .map(|x| x.abs())
+            .sum();
 
-        if any_negative {
-            10.0 + 1.0 * distance + 1.0 * integerness + 0.0 * presses
-        } else {
-            1.0 * distance + 1.0 * integerness + 0.0 * presses
-        }
+        1.0 * distance + 0.5 * integerness + 0.5 * presses + 1.0 * negatives
     }
 
     fn fewest_presses_for_joltage(&self, learning_rate: f32) -> usize {
@@ -181,20 +179,21 @@ impl Machine {
         let mut dydx: Vec<_> = cost.iter().map(|c| c - starting_cost).collect();
 
         dbg!(starting_cost);
-        for _ in 0..100 {
+        for _ in 0..200 {
             dbg!(&cost);
             dbg!(&dydx);
             dbg!(&solution);
             let new_solution: Vec<_> = solution
                 .iter()
                 .zip(dydx.iter())
-                .map(|(x, dx)| x - learning_rate * dx)
+                .zip(cost.iter())
+                .map(|((x, dydx), y)| x - learning_rate * y / dydx)
                 .collect();
 
             let new_cost: Vec<f32> = (0..self.buttons.len())
                 .map(|idx| {
                     let mut solution = solution.clone();
-                    solution[idx] -= learning_rate * dydx[idx];
+                    solution[idx] = new_solution[idx];
                     Self::cost(&target, &solution, &buttons)
                 })
                 .collect();
@@ -208,8 +207,6 @@ impl Machine {
                 .map(|((dy, new_x), old_x)| dy / (new_x - old_x))
                 .collect();
 
-            dbg!(cost);
-            dbg!(solution);
             cost = new_cost;
             solution = new_solution;
         }
@@ -262,20 +259,20 @@ impl Machine {
                     return current.count;
                 }
 
-                if let Some(presses) = seen_joltages.get(&current.joltage) {
-                    if *presses <= current.count {
-                        continue;
-                    }
-                } else {
-                    seen_joltages.insert(current.joltage.clone(), current.count);
+                if let Some(presses) = seen_joltages.get(&current.joltage)
+                    && *presses <= current.count
+                {
+                    continue;
                 }
+                seen_joltages.insert(current.joltage.clone(), current.count);
 
                 let distance = self
                     .joltage
                     .iter()
                     .zip(current.joltage.iter())
                     .map(|(&j1, &j2)| j1.abs_diff(j2))
-                    .sum();
+                    .max()
+                    .unwrap();
 
                 (0..self.buttons.len()).for_each(|b| {
                     new_queue.push(JoltageJob {
@@ -295,14 +292,14 @@ impl Machine {
             dbg!(new_q_len);
             queue = new_queue
                 .into_iter()
-                .take(std::cmp::min(new_q_len, 100000))
+                .take(std::cmp::min(new_q_len, 1000000))
                 .collect();
         }
     }
 }
 
 fn main() {
-    let input = std::fs::read_to_string("test_input.txt").expect("Can't read file");
+    let input = std::fs::read_to_string("input.txt").expect("Can't read file");
     let machines: Vec<_> = input
         .lines()
         .map(|l| Machine::from_str(l).unwrap())
@@ -312,8 +309,7 @@ fn main() {
     dbg!(part1);
     let part2: usize = machines
         .iter()
-        .take(1)
-        .map(|m| m.fewest_presses_for_joltage(0.01))
+        .map(|m| m.fewest_presses_for_joltage_old())
         .sum();
     dbg!(part2);
 }
